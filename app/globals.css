@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 260 50% 2%;
+    --foreground: 0 0% 98%;
+    --card: 260 50% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 260 50% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 267 75% 64%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 260 30% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 260 30% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 273 75% 64%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 260 30% 14.9%;
+    --input: 260 30% 14.9%;
+    --ring: 260 75% 64%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+.gradient-bg {
+  background: radial-gradient(circle at top left, 
+    hsl(267, 75%, 15%) 0%,
+    hsl(260, 50%, 10%) 50%,
+    hsl(240, 50%, 5%) 100%
+  );
+  background-attachment: fixed;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-in {
+  animation: fadeIn 0.5s ease-out;
+}
