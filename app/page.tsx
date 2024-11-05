@@ -92,66 +92,50 @@ export default function Home() {
         return;
       }
 
-      // Prevenir valores negativos
-      if (value.includes('-')) {
-        toast.error('No se permiten valores negativos');
-        return;
-      }
-
+      // Reemplazar coma con punto y limpiar entrada
       const cleanValue = value.replace(',', '.');
 
-      // Validar formato numérico
+      // Validar formato numérico (permitir puntos)
       if (!/^\d*\.?\d*$/.test(cleanValue)) {
         return;
       }
 
       const numberValue = Number(cleanValue);
 
-      // Validar que sea un número válido
+      // Validar número
       if (isNaN(numberValue)) {
         return;
       }
 
+      // Aplicar validaciones
+      if (field === 'value') {
+        if (numberValue < system.min || numberValue > system.max) {
+          toast.error(`La nota debe estar entre ${system.min} y ${system.max}`);
+          return;
+        }
+      }
+
       if (field === 'weight') {
-        // Validar rango de porcentaje
-        if (numberValue < 0) {
-          toast.error('El porcentaje no puede ser negativo');
-          return;
-        }
-        if (numberValue > 100) {
-          toast.error('El porcentaje no puede ser mayor a 100%');
+        if (numberValue < 0 || numberValue > 100) {
+          toast.error('El porcentaje debe estar entre 0 y 100');
           return;
         }
 
-        // Validar suma total de porcentajes
-        const currentTotal = grades.reduce((sum, g, i) =>
+        const currentTotal = grades.reduce((sum, g, i) => 
           sum + (i === index ? 0 : Number(g.weight) || 0), 0);
-
+        
         if (currentTotal + numberValue > 100) {
           toast.error('La suma de porcentajes no puede exceder 100%');
           return;
         }
       }
 
-      if (field === 'value') {
-        // Validar rango según sistema de calificación
-        if (numberValue < system.min) {
-          toast.error(`La nota no puede ser menor a ${system.min}`);
-          return;
-        }
-        if (numberValue > system.max) {
-          toast.error(`La nota no puede ser mayor a ${system.max}`);
-          return;
-        }
-      }
-
-      // Si pasa todas las validaciones, actualizar el valor
       newGrades[index] = {
         ...newGrades[index],
-        [field]: numberValue
+        [field]: cleanValue // Almacenar como cadena para mantener entrada decimal
       };
     }
-
+    
     setGrades(newGrades);
   };
 
@@ -267,6 +251,7 @@ export default function Home() {
                       <Input
                         id={`grade-${index}`}
                         type="text" // Cambiado de number a text
+                        inputMode="decimal"
                         value={grade.value === 0 ? '' : grade.value}
                         onChange={(e) =>
                           updateGrade(index, 'value', e.target.value)
