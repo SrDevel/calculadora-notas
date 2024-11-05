@@ -7,8 +7,21 @@ import { Toaster } from '@/components/ui/sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Grade Calculator',
-  description: 'Calculate your grades and track your academic progress',
+  title: 'NotaSmart',
+  description: 'Calcula tu nota final de forma rápida y sencilla',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' }
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180' }
+    ],
+    shortcut: '/favicon-16x16.png',
+  },
+  manifest: '/site.webmanifest'
 };
 
 export default function RootLayout({
@@ -17,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <body className={`${inter.className} gradient-bg min-h-screen`}>
         <ThemeProvider
           attribute="class"

@@ -22,14 +22,15 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 
+// Actualizar la interfaz Grade
 interface Grade {
-  value: number;
-  weight: number;
+  value: number | string;
+  weight: number | string;
 }
 
 export default function Home() {
   const [gradingSystem, setGradingSystem] = useState('0-5');
-  const [grades, setGrades] = useState<Grade[]>([{ value: 0, weight: 100 }]);
+  const [grades, setGrades] = useState<Grade[]>([{ value: '', weight: '' }]);
   const [targetGrade, setTargetGrade] = useState(3);
   const [isOpen, setIsOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -41,9 +42,9 @@ export default function Home() {
   };
 
   const calculateAverage = () => {
-    const totalWeight = grades.reduce((sum, grade) => sum + grade.weight, 0);
+    const totalWeight = grades.reduce((sum, grade) => sum + Number(grade.weight), 0);
     const weightedSum = grades.reduce(
-      (sum, grade) => sum + grade.value * (grade.weight / 100),
+      (sum, grade) => sum + Number(grade.value) * (Number(grade.weight) / 100),
       0
     );
     return totalWeight === 0 ? 0 : weightedSum;
@@ -51,11 +52,11 @@ export default function Home() {
 
   const calculateNeededGrade = () => {
     const currentTotal = grades.reduce(
-      (sum, grade) => sum + grade.value * (grade.weight / 100),
+      (sum, grade) => sum + Number(grade.value) * (Number(grade.weight) / 100),
       0
     );
     const remainingWeight =
-      100 - grades.reduce((sum, grade) => sum + grade.weight, 0);
+      100 - grades.reduce((sum, grade) => sum + Number(grade.weight), 0);
 
     if (remainingWeight <= 0) return null;
 
@@ -66,35 +67,91 @@ export default function Home() {
     return Math.min(Math.max(needed, system.min), system.max);
   };
 
+  // Actualizar la función addGrade
   const addGrade = () => {
     if (grades.length >= 10) {
       toast.error('Máximo 10 notas permitidas');
       return;
     }
-    setGrades([...grades, { value: 0, weight: 0 }]);
+    setGrades([...grades, { value: '', weight: '' }]);
   };
 
-  // Modificar la función updateGrade para manejar puntos y comas
+  // Modificar updateGrade para manejar valores vacíos
   const updateGrade = (index: number, field: keyof Grade, value: string | number) => {
     const newGrades = [...grades];
-    
+    const system = systems[gradingSystem as keyof typeof systems];
+
     if (typeof value === 'string') {
-      // Reemplazar comas por puntos y limpiar el input
+      // Permitir valor vacío
+      if (value === '') {
+        newGrades[index] = {
+          ...newGrades[index],
+          [field]: ''
+        };
+        setGrades(newGrades);
+        return;
+      }
+
+      // Prevenir valores negativos
+      if (value.includes('-')) {
+        toast.error('No se permiten valores negativos');
+        return;
+      }
+
       const cleanValue = value.replace(',', '.');
-      // Si está vacío, establecer como cadena vacía en lugar de 0
-      const numberValue = cleanValue === '' ? '' : Number(cleanValue);
-      
+
+      // Validar formato numérico
+      if (!/^\d*\.?\d*$/.test(cleanValue)) {
+        return;
+      }
+
+      const numberValue = Number(cleanValue);
+
+      // Validar que sea un número válido
+      if (isNaN(numberValue)) {
+        return;
+      }
+
+      if (field === 'weight') {
+        // Validar rango de porcentaje
+        if (numberValue < 0) {
+          toast.error('El porcentaje no puede ser negativo');
+          return;
+        }
+        if (numberValue > 100) {
+          toast.error('El porcentaje no puede ser mayor a 100%');
+          return;
+        }
+
+        // Validar suma total de porcentajes
+        const currentTotal = grades.reduce((sum, g, i) =>
+          sum + (i === index ? 0 : Number(g.weight) || 0), 0);
+
+        if (currentTotal + numberValue > 100) {
+          toast.error('La suma de porcentajes no puede exceder 100%');
+          return;
+        }
+      }
+
+      if (field === 'value') {
+        // Validar rango según sistema de calificación
+        if (numberValue < system.min) {
+          toast.error(`La nota no puede ser menor a ${system.min}`);
+          return;
+        }
+        if (numberValue > system.max) {
+          toast.error(`La nota no puede ser mayor a ${system.max}`);
+          return;
+        }
+      }
+
+      // Si pasa todas las validaciones, actualizar el valor
       newGrades[index] = {
         ...newGrades[index],
         [field]: numberValue
       };
-    } else {
-      newGrades[index] = {
-        ...newGrades[index],
-        [field]: value
-      };
     }
-    
+
     setGrades(newGrades);
   };
 
@@ -104,11 +161,11 @@ export default function Home() {
 
   // Función para calcular nota final
   const calculateFinalGrade = () => {
-    const totalWeight = grades.reduce((sum, grade) => sum + grade.weight, 0);
+    const totalWeight = grades.reduce((sum, grade) => sum + Number(grade.weight), 0);
     if (totalWeight !== 100) return null;
-    
+
     return grades.reduce((sum, grade) => {
-      return sum + (grade.value * (grade.weight / 100));
+      return sum + (Number(grade.value) * (Number(grade.weight) / 100));
     }, 0);
   }
 
@@ -119,12 +176,12 @@ export default function Home() {
     return {
       finalGrade: finalGrade.toFixed(2),
       diff: Math.abs(Number(diff.toFixed(2))),
-      passed: diff >= 0 
+      passed: diff >= 0
     };
   }
 
   const calcular = () => {
-    const totalNotas = grades.reduce((sum, grade) => sum + grade.weight, 0);
+    const totalNotas = grades.reduce((sum, grade) => sum + Number(grade.weight), 0);
     if (totalNotas >= 100) {
       setIsOpen(true);
     }
@@ -133,11 +190,11 @@ export default function Home() {
   // Función para calcular estadísticas
   const calculateStats = () => {
     const average = calculateAverage();
-    const totalWeight = grades.reduce((sum, grade) => sum + grade.weight, 0);
-    const highest = Math.max(...grades.map(g => g.value));
-    const lowest = Math.min(...grades.map(g => g.value));
+    const totalWeight = grades.reduce((sum, grade) => sum + Number(grade.weight), 0);
+    const highest = Math.max(...grades.map(g => Number(g.value) || 0));
+    const lowest = Math.min(...grades.map(g => Number(g.value) || 0));
     const passing = systems[gradingSystem as keyof typeof systems].passing;
-    
+
     return { average, totalWeight, highest, lowest, passing };
   };
 
@@ -153,11 +210,8 @@ export default function Home() {
             <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 blur-3xl" />
             <GraduationCap className="mx-auto h-16 w-16 text-primary animate-bounce" />
             <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-accent animate-fade-in relative">
-              Calculadora de Notas
+              NotaSmart
             </h1>
-            <p className="text-muted-foreground relative">
-              Calcula tus notas.
-            </p>
           </div>
 
           {/* Tarjeta principal con efecto glass mejorado */}
@@ -227,13 +281,12 @@ export default function Home() {
                       <Label htmlFor={`weight-${index}`} className="text-foreground/80">Porcentaje (%)</Label>
                       <Input
                         id={`weight-${index}`}
-                        type="number"
+                        type="text" // Cambiado de number a text
                         value={grade.weight}
                         onChange={(e) =>
-                          updateGrade(index, 'weight', Number(e.target.value))
+                          updateGrade(index, 'weight', e.target.value)
                         }
-                        min="0"
-                        max="100"
+                        placeholder="0"
                         className="bg-background/40 backdrop-blur-sm border-primary/10 focus:ring-2 focus:ring-primary/20 hover:bg-background/60 transition-colors"
                       />
                     </div>
@@ -250,7 +303,7 @@ export default function Home() {
                 <div className="space-y-4 mt-4">
                   <Button
                     onClick={addGrade}
-                    disabled={grades.reduce((sum, grade) => sum + grade.weight, 0) >= 100}
+                    disabled={grades.reduce((sum, grade) => sum + Number(grade.weight), 0) >= 100}
                     className="w-full bg-primary/80 hover:bg-primary transition-colors"
                   >
                     Agregar Nota
@@ -295,20 +348,32 @@ export default function Home() {
                   <Target className="h-8 w-8 text-accent animate-pulse" />
                   <div>
                     <h3 className="font-semibold text-foreground/80">Nota Necesaria</h3>
-                    <p className="text-2xl font-bold text-accent">
-                      {(() => {
-                        const totalWeight = grades.reduce((sum, grade) => sum + grade.weight, 0);
-                        if (totalWeight === 100) {
-                          const status = getGradeStatus();
-                          if (status) {
-                            return status.passed ? 
-                              `¡Aprobado! Nota final: ${status.finalGrade}` :
-                              `No aprobado. Nota final: ${status.finalGrade} (faltaron ${status.diff} puntos)`;
+                    <div className="flex flex-col">
+                      <p className="text-lg font-bold text-accent truncate">
+                        {(() => {
+                          const totalWeight = grades.reduce((sum, grade) => sum + Number(grade.weight), 0);
+                          if (totalWeight === 100) {
+                            const status = getGradeStatus();
+                            if (status) {
+                              return status.passed ? (
+                                <span className="text-green-500">¡Aprobado! {status.finalGrade}</span>
+                              ) : (
+                                <>
+                                  <span className="text-accent">Necesitas {status.diff.toFixed(2)}</span>
+                                  <span className="text-sm text-foreground/60 ml-1">para aprobar</span>
+                                </>
+                              );
+                            }
                           }
-                        }
-                        return calculateNeededGrade()?.toFixed(2) ?? 'N/A';
-                      })()}
-                    </p>
+                          return (
+                            <>
+                              <span>{calculateNeededGrade()?.toFixed(2) ?? 'N/A'}</span>
+                              <span className="text-sm text-foreground/60 ml-1">nota requerida</span>
+                            </>
+                          );
+                        })()}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -323,7 +388,7 @@ export default function Home() {
                   <div>
                     <h3 className="font-semibold text-foreground/80">Porcentaje Restante</h3>
                     <p className="text-2xl font-bold text-primary">
-                      {(100 - grades.reduce((sum, grade) => sum + grade.weight, 0)).toFixed(1)}%
+                      {(100 - grades.reduce((sum, grade) => sum + Number(grade.weight), 0)).toFixed(1)}%
                     </p>
                   </div>
                 </div>
@@ -334,9 +399,9 @@ export default function Home() {
 
         {/* Modal mejorado */}
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent 
-          aria-description='Resultados Finales'
-          className="sm:max-w-[425px] bg-background/95 backdrop-blur-lg border border-primary/20">
+          <DialogContent
+            aria-description='Resultados Finales'
+            className="sm:max-w-[425px] bg-background/95 backdrop-blur-lg border border-primary/20">
             <DialogHeader className="space-y-2">
               <DialogTitle className="text-2xl font-bold text-primary animate-fade-in">
                 Resultados Finales
